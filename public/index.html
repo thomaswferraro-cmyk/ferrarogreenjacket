@@ -1629,6 +1629,16 @@ function cancelLoad() {
 // Handles: Åberg→aberg, Olesen→olesen, J.J. Spaun→j j spaun, S.H. Kim→s h kim
 function normName(s) {
   if (!s) return '';
+  // First map characters that don't decompose via NFD but have ASCII equivalents
+  s = s.replace(/[øØ]/g, 'o')
+       .replace(/[æÆ]/g, 'ae')
+       .replace(/[åÅ]/g, 'a')
+       .replace(/[ðÐ]/g, 'd')
+       .replace(/[þÞ]/g, 'th')
+       .replace(/[ß]/g,  'ss')
+       .replace(/[œŒ]/g, 'oe')
+       .replace(/[łŁ]/g, 'l');
+  // Then NFD-decompose and strip combining diacriticals (é→e, ü→u, etc.)
   return s.normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
