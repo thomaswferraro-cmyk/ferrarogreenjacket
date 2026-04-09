@@ -1823,12 +1823,18 @@ function renderLeaderboard() {
       const isCutOrWd = d.status === 'cut' || d.status === 'wd';
       let cls = isCutOrWd ? 'cut' : (d.status === 'pending' ? 'pending' : (d.posNum === 1 && d.status === 'active' ? 'winner' : 'active'));
       const pillLabel = g.split(' ').slice(-1)[0];
+      const pillScore = (!isCutOrWd && d.score && d.score !== '—' && d.score !== 'E' && d.posNum < 999)
+        ? ' ' + d.score : (d.score === 'E' && d.posNum < 999 ? ' E' : '');
+      const thruStr = (d.thru && d.thru !== '—' && d.thru !== 0) ? ` · Thru ${d.thru}` : '';
       const pillTitle = isCutOrWd
         ? `${g} · MISSED CUT · $0`
-        : (d.posNum < 999 ? `${g} · Pos ${d.pos} · $${d.earnings.toLocaleString()}${d.tiedCount>1?' (tied '+d.tiedCount+')':''}` : g);
-      return `<span class="golfer-pill ${cls}" title="${pillTitle}">${pillLabel}</span>`;
+        : (d.posNum < 999
+            ? `${g} · ${d.pos} · ${d.score}${thruStr} · Proj $${d.earnings.toLocaleString()}${d.tiedCount>1?' (T'+d.tiedCount+')':''}`
+            : `${g} · Not yet started`);
+      return `<span class="golfer-pill ${cls}" title="${pillTitle}">${pillLabel}${pillScore}</span>`;
     }).join('');
 
+    const projLabel = mastersData.length > 0 && team.total === 0 ? ' (projected)' : '';
     const earningsHtml = team.total > 0
       ? `<span class="earnings-cell">$${team.total.toLocaleString()}</span>`
       : `<span class="earnings-cell earnings-zero">$0</span>`;
