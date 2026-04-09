@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ferraro Green Jacket — 2025 Masters Demo</title>
+<title>Ferraro Green Jacket Tournament — 2026 Masters Pool</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -740,18 +740,7 @@
     <button class="nav-tab" onclick="showView('admin', this)">Admin</button>
   </div>
 </nav>
-<!-- Unofficial disclaimer banner -->
-<div style="background:#1a1a1a;border-bottom:2px solid #FFD100;padding:10px 24px;text-align:center;">
-  <span style="font-size:13px;color:rgba(255,255,255,0.65);letter-spacing:0.03em;line-height:1.6;">
-    ⚠️&nbsp; <strong style="color:#FFD100;">UNOFFICIAL &amp; UNOFFICIAL ONLY</strong> &nbsp;—&nbsp;
-    Scores and standings are pulled from a third-party feed and may be delayed or incorrect. For entertainment purposes only.
-    Always verify at <a href="https://www.masters.com" target="_blank" style="color:#FFD100;text-decoration:underline;">masters.com</a>.
-  </span>
-  <br>
-  <span style="font-size:13px;color:rgba(255,209,0,0.85);letter-spacing:0.02em;">
-    🏆&nbsp; As always, if you are in the hunt to win the Green Jacket Pool come Sunday, you will receive notice from the Ferraros. Good luck out there!
-  </span>
-</div>
+
 
 
 <main class="main">
@@ -809,7 +798,7 @@
         <div class="stat-label" style="display:flex;align-items:center;gap:6px;">Pool Prize
           <button onclick="openPrizeEditor()" title="Edit prize" style="background:none;border:none;cursor:pointer;font-size:11px;color:#aaa;padding:0;line-height:1;">✏️</button>
         </div>
-        <div id="stat-prize-display" class="stat-value" style="font-size:18px;color:#00573F;">$18,000</div>
+        <div id="stat-prize-display" class="stat-value" style="font-size:18px;color:#00573F;">TBD</div>
         <div class="stat-sub">13th Annual · 2026</div>
       </div>
       <div class="stat-card">
@@ -836,7 +825,7 @@
       <!-- Disclaimer -->
       <div style="background:#faf7f0;border:1px solid #e0d8c0;border-left:4px solid #FFD100;border-radius:8px;padding:14px 18px;margin-bottom:18px;display:flex;gap:12px;align-items:flex-start;">
         <span style="font-size:20px;flex-shrink:0;margin-top:1px;">⛳</span>
-        <p style="font-size:13px;color:#4a4a4a;line-height:1.65;margin:0;">
+        <p style="font-size:15px;color:#4a4a4a;line-height:1.7;margin:0;">
           <strong style="color:#00573F;">FORE!</strong> This leaderboard is <strong style="color:#00573F;text-decoration:underline;">unofficial</strong> — for fun only. Projected earnings use current positions and the official Masters Tournament payout table ($20M purse). <strong>Ties are split correctly</strong>: when multiple golfers share a position, the prize money for all tied spots is averaged and divided equally — nobody gets credited more than they'd actually earn. <strong>Golfers who miss the cut earn $0</strong> for the pool and are shown struck through in red. Standings update every 30 seconds via ESPN. <strong style="color:#00573F;">If you're in the hunt come Sunday, you'll get an official call from the Ferraros.</strong> Good luck out there.
         </p>
       </div>
@@ -1241,7 +1230,7 @@ function init() {
   localStorage.setItem('seed_version', 'v9_masters2026');
   localStorage.setItem(DATA_KEY, JSON.stringify(SEED_DATA));
   renderLeaderboard();
-  const prize = localStorage.getItem(PRIZE_KEY) || '18000';
+  const prize = localStorage.getItem(PRIZE_KEY) || 'TBD';
   if (document.getElementById('prize-input')) {
     document.getElementById('prize-input').value = prize;
   }
@@ -1316,7 +1305,7 @@ async function loadMastersData() {
   if (!ev) ev = events.find(e => e.competitions?.[0]?.competitors?.length > 10);
 
   if (!ev || !ev.competitions?.[0]) {
-    updateLiveStatus('Pre-Tournament');
+    updateLiveStatus('Round 1');
     usePendingState();
     scheduleRefresh();
     return;
@@ -1358,7 +1347,7 @@ async function loadMastersData() {
 
   const round      = status?.period || 0;
   const inProgress = status?.type?.state === 'in';
-  updateLiveStatus(inProgress ? `Round ${round} · Live` : (round > 0 ? `R${round} Complete` : 'Pre-Tournament'));
+  updateLiveStatus(inProgress ? `Round ${round} · Live` : (round > 0 ? `R${round} Complete` : 'Round 1'));
   document.getElementById('last-updated-el').textContent = 'Updated: ' + new Date().toLocaleTimeString();
 
   _golferIndex = null;
@@ -1413,7 +1402,7 @@ function updateLiveStatus(text) {
 
   // Round metadata for each round
   const roundMeta = {
-    0: { label: 'Pre',  sub: 'Apr 10–13, 2026',    badge: 'First Tee · 8:00 AM',  badgeSub: 'Round 1 · Apr 10, 2026' },
+    0: { label: 'R1',  sub: 'Apr 10–13, 2026',    badge: 'First Tee · 8:00 AM',  badgeSub: 'Round 1 · Apr 10, 2026' },
     1: { label: 'R1',   sub: 'Thursday · Apr 10',   badge: 'Round 1 Live',          badgeSub: 'Thursday · Apr 10, 2026' },
     2: { label: 'R2',   sub: 'Friday · Apr 11',     badge: 'Round 2 Live',          badgeSub: 'Friday · Apr 11, 2026' },
     3: { label: 'R3',   sub: 'Saturday · Apr 12',   badge: 'Round 3 Live',          badgeSub: 'Saturday · Apr 12, 2026' },
@@ -1438,7 +1427,7 @@ function updateLiveStatus(text) {
       roundEl.textContent = 'Manual';
       if (roundSub) roundSub.textContent = 'Override active';
     } else if (text.includes('Pre')) {
-      roundEl.textContent = 'Pre';
+      roundEl.textContent = 'R1';
       if (roundSub) roundSub.textContent = 'Apr 10–13, 2026';
     } else {
       roundEl.textContent = isComplete ? meta.label + ' ✓' : meta.label;
