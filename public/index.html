@@ -1185,6 +1185,34 @@ function getPayoutForPosition(posNum, tiedCount) {
 
 // buildTieMap: returns posNum → number of active players at that position
 // Cut / WD players are excluded — they earn $0 regardless of position shown.
+// Build a projected position map based on current scores
+// Used mid-round to show estimated earnings before positions are finalised
+function buildProjectedPosMap(players) {
+  // Only include players who have started (have a real score)
+  const active = players.filter(p => !p.cut && !p.wd && p.score !== '—' && p.score !== undefined);
+  
+  // Sort by scoreVal ascending (lower = better)
+  const sorted = [...active].sort((a, b) => a.scoreVal - b.scoreVal);
+  
+  // Assign projected positions with tie handling
+  const projMap = {}; // name -> { projPos, tiedCount }
+  let i = 0;
+  while (i < sorted.length) {
+    const score = sorted[i].scoreVal;
+    // Find all players tied at this score
+    let j = i;
+    while (j < sorted.length && sorted[j].scoreVal === score) j++;
+    const tiedCount = j - i;
+    const projPos = i + 1; // 1-based position
+    for (let k = i; k < j; k++) {
+      projMap[sorted[k].name] = { projPos, tiedCount };
+    }
+    i = j;
+  }
+  return projMap;
+}
+
+
 function buildTieMap(players) {
   const map = {};
   players.forEach(p => {
@@ -1651,31 +1679,58 @@ function getGolferData(name) {
 
 function calcTeamEarnings(entry) {
   const golfers = [entry.g1, entry.g2, entry.g3, entry.g4];
-  const tieMap = buildTieMap(mastersData);
-  let total = 0;
-  let totalScore = 0; // sum of stroke scores (used for tiebreaker comparison)
+  const tieMap      = buildTieMap(mastersData);
+  const projPosMap  = buildProjectedPosMap(mastersData);
+  let total      = 0;
+  let totalScore = 0;
+
   const breakdown = golfers.map(g => {
     const data = getGolferData(g);
     if (!data) {
-      return { name: g, earnings: 0, status: 'pending', pos: '—', score: '—', posNum: 999, tiedCount: 1 };
+      return { name: g, earnings: 0, status: 'pending', pos: '—', score: '—', posNum: 999, tiedCount: 1, projected: false };
     }
-    const isCut = data.cut || data.wd || data.posNum >= 999;
-    const tiedCount = isCut ? 1 : (tieMap[data.posNum] || 1);
-    const earnings = isCut ? 0 : getPayoutForPosition(data.posNum, tiedCount);
-    total += earnings;
-    if (!isCut) totalScore += (data.scoreVal || 0); // accumulate strokes for non-cut players
+
+    const isCut = data.cut || data.wd;
+    if (isCut) {
+      return { name: g, earnings: 0, status: data.cut ? 'cut' : 'wd', pos: data.position || '—', score: data.score || '—', posNum: 999, tiedCount: 1, projected: false };
+    }
+
+    // Use official position if available (posNum < 999)
+    // Otherwise fall back to projected position from current score
+    let posNum, tiedCount, projected;
+    if (data.posNum < 999) {
+      posNum     = data.posNum;
+      tiedCount  = tieMap[posNum] || 1;
+      projected  = false;
+    } else if (projPosMap[data.name]) {
+      // Player has started but ESPN hasn't assigned position yet
+      posNum    = projPosMap[data.name].projPos;
+      tiedCount = projPosMap[data.name].tiedCount;
+      projected = true;
+    } else {
+      // Not yet started
+      return { name: g, earnings: 0, status: 'active', pos: '—', score: data.score || '—', posNum: 999, tiedCount: 1, projected: false };
+    }
+
+    const earnings = getPayoutForPosition(posNum, tiedCount);
+    total      += earnings;
+    totalScore += (data.scoreVal || 0);
+
     return {
       name: g,
       earnings,
-      status: data.cut ? 'cut' : (data.wd ? 'wd' : 'active'),
-      pos: data.position || '—',
-      score: data.score || '—',
-      posNum: data.posNum,
-      tiedCount
+      status:    'active',
+      pos:       projected ? `~${posNum}` : (data.position || String(posNum)),
+      score:     data.score || '—',
+      posNum,
+      tiedCount,
+      projected,
     };
   });
+
   return { total, breakdown, totalScore };
 }
+
 
 function recalcLeaderboard() {
   renderLeaderboard();
@@ -1826,10 +1881,11 @@ function renderLeaderboard() {
       const pillScore = (!isCutOrWd && d.score && d.score !== '—' && d.score !== 'E' && d.posNum < 999)
         ? ' ' + d.score : (d.score === 'E' && d.posNum < 999 ? ' E' : '');
       const thruStr = (d.thru && d.thru !== '—' && d.thru !== 0) ? ` · Thru ${d.thru}` : '';
+      const projLabel = d.projected ? '~' : '';
       const pillTitle = isCutOrWd
         ? `${g} · MISSED CUT · $0`
         : (d.posNum < 999
-            ? `${g} · ${d.pos} · ${d.score}${thruStr} · Proj $${d.earnings.toLocaleString()}${d.tiedCount>1?' (T'+d.tiedCount+')':''}`
+            ? `${g} · ${projLabel}Pos ${d.pos} · ${d.score}${thruStr} · ${d.projected ? 'Proj ' : ''}$${d.earnings.toLocaleString()}${d.tiedCount>1?' (T'+d.tiedCount+')':''}`
             : `${g} · Not yet started`);
       return `<span class="golfer-pill ${cls}" title="${pillTitle}">${pillLabel}${pillScore}</span>`;
     }).join('');
