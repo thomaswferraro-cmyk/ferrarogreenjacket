@@ -717,7 +717,7 @@
       <div>
         <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:900;color:#fff;letter-spacing:0.01em;line-height:1.15;">The Ferraro Green Jacket Tournament</div>
         <div style="display:flex;align-items:center;gap:6px;margin-top:3px;">
-          <span style="font-size:13px;color:rgba(255,209,0,0.9);letter-spacing:0.06em;">Hello, friends &nbsp;·&nbsp; Welcome to the 2026 Masters Pool</span>
+          <span style="font-size:17px;color:rgba(255,209,0,0.9);letter-spacing:0.04em;">Hello, friends &nbsp;·&nbsp; Welcome to the 2026 Masters Pool</span>
           <button id="tagline-edit-btn-hero" onclick="openTaglineEditor()" title="Edit tagline" style="background:rgba(255,209,0,0.2);border:1px solid rgba(255,209,0,0.4);border-radius:4px;padding:2px 6px;cursor:pointer;font-size:10px;color:#FFD100;display:none;">✏️</button>
         </div>
       </div>
@@ -798,8 +798,11 @@
         <div class="stat-label" style="display:flex;align-items:center;gap:6px;">Pool Prize
           <button onclick="openPrizeEditor()" title="Edit prize" style="background:none;border:none;cursor:pointer;font-size:11px;color:#aaa;padding:0;line-height:1;">✏️</button>
         </div>
-        <div id="stat-prize-display" class="stat-value" style="font-size:18px;color:#00573F;">TBD</div>
+        <div id="stat-prize-display" class="stat-value" style="font-size:18px;color:#00573F;">$37,500</div>
         <div class="stat-sub">13th Annual · 2026</div>
+        <div style="margin-top:6px;font-size:11px;color:#888;line-height:1.6;">
+          1st $18,750 · 2nd $9,375 · 3rd $5,625<br>4th $2,625 · 5th $1,125
+        </div>
       </div>
       <div class="stat-card">
         <div class="stat-label">Tournament</div>
@@ -976,6 +979,17 @@
           <button class="btn btn-outline" style="color:#c0392b;border-color:#c0392b;" onclick="clearAllData()">Clear data</button>
         </div>
       </div>
+      <div class="admin-card">
+        <div class="admin-title">Edit Tagline</div>
+        <div class="admin-desc">Edit the subtitle that appears in the header: <em>"Hello, friends · Welcome to the 2026 Masters Pool"</em></div>
+        <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">
+          <textarea id="admin-tagline-input" rows="2" style="flex:1;min-width:200px;padding:10px 14px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;resize:vertical;" placeholder="Hello, friends · Welcome to the 2026 Masters Pool"></textarea>
+          <button class="admin-btn" onclick="saveAdminTagline()">Save</button>
+        </div>
+        <div id="admin-tagline-status" style="margin-top:8px;font-size:13px;color:#00573F;"></div>
+      </div>
+
+
 
       <div class="admin-card">
         <div class="admin-title">Live Data Status</div>
@@ -1041,6 +1055,7 @@
 
 // ── State ──────────────────────────────────────────────────────
 let poolEntries = [];       // parsed from CSV
+let rankHistory  = {};      // name+teamNum -> previous rank for movement arrows
 let mastersData = [];       // live golfer scores
 let sortMode = 'earnings';
 let expandedRow = null;
@@ -1230,7 +1245,7 @@ function init() {
   localStorage.setItem('seed_version', 'v9_masters2026');
   localStorage.setItem(DATA_KEY, JSON.stringify(SEED_DATA));
   renderLeaderboard();
-  const prize = localStorage.getItem(PRIZE_KEY) || 'TBD';
+  const prize = localStorage.getItem(PRIZE_KEY) || '37500';
   if (document.getElementById('prize-input')) {
     document.getElementById('prize-input').value = prize;
   }
@@ -1360,7 +1375,7 @@ async function loadMastersData() {
 function scheduleRefresh() {
   setTimeout(() => {
     if (!manualOverrideActive) loadMastersData();
-  }, 30000);
+  }, 120000);
 }
 
 function parseScore(s) {
@@ -1832,13 +1847,13 @@ function renderLeaderboard() {
       const medals = golfPins;
       const bgColors = ['rgba(255,209,0,0.18)','rgba(0,87,63,0.09)','rgba(0,87,63,0.07)','rgba(0,87,63,0.05)','rgba(0,87,63,0.03)'];
       return `
-      <div style="display:flex;align-items:center;gap:10px;background:${bgColors[Math.min(i,4)]};border-radius:8px;padding:7px 12px;">
+      <div style="display:flex;align-items:center;gap:8px;background:${bgColors[Math.min(i,4)]};border-radius:8px;padding:7px 12px;">
         <span style="font-size:16px;width:22px;text-align:center;">${medals[Math.min(i,4)] || ''}</span>
         <span style="font-size:13px;font-weight:600;color:#00573F;flex:1;">${t.name}</span>
+        <span style="font-family:'DM Mono',monospace;font-size:11px;color:#888;margin-right:4px;" title="Ferraro Green Jacket prize">${['$18,750','$9,375','$5,625','$2,625','$1,125'][i] || ''}</span>
         <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:#00573F;">${t.total > 0 ? '$'+t.total.toLocaleString() : '—'}</span>
       </div>
-    `}).join('');
-  }
+    `}).join('');  }
 
   // Render table
   const tbody = document.getElementById('leaderboard-body');
@@ -1872,6 +1887,20 @@ function renderLeaderboard() {
     const rankDisplay = tied ? 'T' + rank : String(rank);
     const rankClass = rank === 1 ? 'rank-gold' : (rank === 2 ? 'rank-silver' : (rank === 3 ? 'rank-bronze' : ''));
 
+    // Movement arrows
+    const teamKey = team.name + '|' + team.teamNum;
+    const prevRank = rankHistory[teamKey];
+    let arrowHtml = '';
+    if (prevRank !== undefined && prevRank !== rank) {
+      if (rank < prevRank) {
+        const moved = prevRank - rank;
+        arrowHtml = `<span style="color:#2e7d32;font-size:11px;font-weight:700;margin-left:4px;" title="Up ${moved} from ${prevRank}">▲${moved}</span>`;
+      } else {
+        const moved = rank - prevRank;
+        arrowHtml = `<span style="color:#c62828;font-size:11px;font-weight:700;margin-left:4px;" title="Down ${moved} from ${prevRank}">▼${moved}</span>`;
+      }
+    }
+
     const pillsHtml = [team.g1, team.g2, team.g3, team.g4].map((g, i) => {
       const d = team.breakdown[i];
       const isCutOrWd = d.status === 'cut' || d.status === 'wd';
@@ -1900,7 +1929,7 @@ function renderLeaderboard() {
     tr.id = rowId;
     tr.onclick = () => toggleExpand(idx, sorted);
     tr.innerHTML = `
-      <td class="rank-cell"><span class="${rankClass}">${rankDisplay}</span></td>
+      <td class="rank-cell"><span class="${rankClass}">${rankDisplay}</span>${arrowHtml}</td>
       <td>
         <span class="entrant-name">${team.name}</span>
         <span class="team-num">#${team.teamNum}</span>
@@ -1938,6 +1967,12 @@ function renderLeaderboard() {
     }).join('');
     detailTr.innerHTML = `<td colspan="4"><div class="detail-inner">${detailCards}</div></td>`;
     tbody.appendChild(detailTr);
+  });
+
+  // Save current ranks for movement tracking on next refresh
+  sorted.forEach((team, idx) => {
+    const teamKey = team.name + '|' + team.teamNum;
+    rankHistory[teamKey] = rankMap.get(idx);
   });
 
   filterLeaderboard();
@@ -1997,6 +2032,11 @@ function checkPw() {
     adminUnlocked = true;
     document.getElementById('pw-card').style.display = 'none';
     document.getElementById('admin-panel').style.display = 'block';
+    // Pre-populate tagline editor with current value
+    const currentTagline = document.getElementById('tagline-text').textContent.trim()
+      || 'Hello, friends · Welcome to the 2026 Masters Pool';
+    const adminTaglineInput = document.getElementById('admin-tagline-input');
+    if (adminTaglineInput) adminTaglineInput.value = currentTagline;
     showTaglineEditBtn();
   } else {
     status.textContent = 'Incorrect password.';
@@ -2234,6 +2274,20 @@ function runNameValidator() {
 
 
 // ── Tagline editor ────────────────────────────────────────────
+function saveAdminTagline() {
+  const val = document.getElementById('admin-tagline-input').value.trim();
+  if (!val) return;
+  // Update the header tagline text
+  const el = document.getElementById('tagline-text');
+  if (el) el.textContent = val;
+  localStorage.setItem('pool_tagline', val);
+  document.getElementById('admin-tagline-status').textContent = '✓ Tagline updated!';
+  setTimeout(() => {
+    document.getElementById('admin-tagline-status').textContent = '';
+  }, 3000);
+}
+
+
 const TAGLINE_KEY = 'pool_tagline';
 function initTagline() {
   // Version guard: if stored value looks like HTML (old format), discard it
