@@ -697,7 +697,7 @@
         <div class="live-dot" id="live-dot"></div>
         <span id="live-status-text">Live</span>
       </div>
-      <div class="last-updated" id="last-updated-el">Refreshes every 30 sec</div>
+      <div class="last-updated" id="last-updated-el">Refreshes every 2 min</div>
     </div>
   </div>
 </header>
@@ -717,7 +717,7 @@
       <div>
         <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:900;color:#fff;letter-spacing:0.01em;line-height:1.15;">The Ferraro Green Jacket Tournament</div>
         <div style="display:flex;align-items:center;gap:6px;margin-top:3px;">
-          <span style="font-size:17px;color:rgba(255,209,0,0.9);letter-spacing:0.04em;">Hello, friends &nbsp;·&nbsp; Welcome to the 2026 Masters Pool</span>
+          <span id="tagline-hero" style="font-size:17px;color:rgba(255,209,0,0.9);letter-spacing:0.04em;">Hello, friends &nbsp;·&nbsp; Welcome to the 2026 Masters Pool</span>
           <button id="tagline-edit-btn-hero" onclick="openTaglineEditor()" title="Edit tagline" style="background:rgba(255,209,0,0.2);border:1px solid rgba(255,209,0,0.4);border-radius:4px;padding:2px 6px;cursor:pointer;font-size:10px;color:#FFD100;display:none;">✏️</button>
         </div>
       </div>
@@ -725,9 +725,9 @@
     <!-- Right: Round badge + date -->
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
       <div style="background:rgba(255,209,0,0.18);border:1.5px solid var(--gold);border-radius:8px;padding:6px 16px;text-align:center;">
-        <div id="header-round-badge" style="font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:#FFD100;letter-spacing:0.04em;">First Tee · 8:00 AM</div>
+        <div id="header-round-badge" style="font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:#FFD100;letter-spacing:0.04em;">Round 2 · Live</div>
       </div>
-      <div id="header-round-sub" style="font-size:12px;color:rgba(255,255,255,0.55);letter-spacing:0.05em;font-family:'DM Mono',monospace;">Round 1 &nbsp;·&nbsp; Apr 10, 2026</div>
+      <div id="header-round-sub" style="font-size:12px;color:rgba(255,255,255,0.55);letter-spacing:0.05em;font-family:'DM Mono',monospace;">Apr 10–13, 2026</div>
     </div>
   </div>
 </div>
@@ -1352,7 +1352,7 @@ async function loadMastersData() {
       score:     scoreRaw,
       scoreVal:  parseScore(scoreRaw),
       thru:      c.status?.thru ?? c.status?.period ?? '—',
-      round:     status?.period || 0,
+      round:     status?.period || 1,  // default to R1 if period not set
       cut:       isCut,
       wd:        isWD,
     };
@@ -1362,8 +1362,15 @@ async function loadMastersData() {
 
   const round      = status?.period || 0;
   const inProgress = status?.type?.state === 'in';
-  updateLiveStatus(inProgress ? `Round ${round} · Live` : (round > 0 ? `R${round} Complete` : 'Round 1'));
+  updateLiveStatus(inProgress ? `Round ${round > 0 ? round : 1} · Live` : (round > 0 ? `R${round} Complete` : 'Round 1'));
   document.getElementById('last-updated-el').textContent = 'Updated: ' + new Date().toLocaleTimeString();
+  // Flash the live dot green briefly to confirm data refreshed
+  const liveDot = document.getElementById('live-dot');
+  if (liveDot) {
+    liveDot.style.transform = 'scale(1.8)';
+    liveDot.style.background = '#4caf50';
+    setTimeout(() => { liveDot.style.transform = 'scale(1)'; }, 600);
+  }
 
   _golferIndex = null;
   renderMastersBoard(mastersData);
@@ -1417,7 +1424,7 @@ function updateLiveStatus(text) {
 
   // Round metadata for each round
   const roundMeta = {
-    0: { label: 'R1',  sub: 'Apr 10–13, 2026',    badge: 'First Tee · 8:00 AM',  badgeSub: 'Round 1 · Apr 10, 2026' },
+    0: { label: 'R1',  sub: 'Thursday · Apr 10',  badge: 'Round 1 Live',           badgeSub: 'Thursday · Apr 10, 2026' },
     1: { label: 'R1',   sub: 'Thursday · Apr 10',   badge: 'Round 1 Live',          badgeSub: 'Thursday · Apr 10, 2026' },
     2: { label: 'R2',   sub: 'Friday · Apr 11',     badge: 'Round 2 Live',          badgeSub: 'Friday · Apr 11, 2026' },
     3: { label: 'R3',   sub: 'Saturday · Apr 12',   badge: 'Round 3 Live',          badgeSub: 'Saturday · Apr 12, 2026' },
@@ -1906,8 +1913,11 @@ function renderLeaderboard() {
       const isCutOrWd = d.status === 'cut' || d.status === 'wd';
       let cls = isCutOrWd ? 'cut' : (d.status === 'pending' ? 'pending' : (d.posNum === 1 && d.status === 'active' ? 'winner' : 'active'));
       const pillLabel = g.split(' ').slice(-1)[0];
-      const pillScore = (!isCutOrWd && d.score && d.score !== '—' && d.score !== 'E' && d.posNum < 999)
-        ? ' ' + d.score : (d.score === 'E' && d.posNum < 999 ? ' E' : '');
+      const isFinished = d.thru === 'F' || d.thru === 18 || d.thru === '18';
+      const pillScore = (!isCutOrWd && d.posNum < 999)
+        ? (d.score && d.score !== '—' ? ' ' + d.score : (d.score === 'E' ? ' E' : ''))
+        : '';
+      const pillFinished = isFinished ? ' ✓' : '';
       const thruStr = (d.thru && d.thru !== '—' && d.thru !== 0) ? ` · Thru ${d.thru}` : '';
       const projLabel = d.projected ? '~' : '';
       const pillTitle = isCutOrWd
@@ -1915,7 +1925,7 @@ function renderLeaderboard() {
         : (d.posNum < 999
             ? `${g} · ${projLabel}Pos ${d.pos} · ${d.score}${thruStr} · ${d.projected ? 'Proj ' : ''}$${d.earnings.toLocaleString()}${d.tiedCount>1?' (T'+d.tiedCount+')':''}`
             : `${g} · Not yet started`);
-      return `<span class="golfer-pill ${cls}" title="${pillTitle}">${pillLabel}${pillScore}</span>`;
+      return `<span class="golfer-pill ${cls}" title="${pillTitle}">${pillLabel}${pillScore}${pillFinished}</span>`;
     }).join('');
 
     const projLabel = mastersData.length > 0 && team.total === 0 ? ' (projected)' : '';
@@ -1960,7 +1970,7 @@ function renderLeaderboard() {
           <div class="golfer-detail-name" style="${nameStyle}">${gname}</div>
           <div class="golfer-detail-row"><span>Position</span><span class="golfer-detail-val" style="${isCutOrWd ? 'color:var(--red);' : ''}">${g.pos}</span></div>
           <div class="golfer-detail-row"><span>Score</span><span class="golfer-detail-val">${g.score || '—'}</span></div>
-          <div class="golfer-detail-row"><span>Status</span><span class="golfer-detail-val" style="${isCutOrWd ? 'color:var(--red);font-weight:600;' : 'color:var(--green)'}">${isCutOrWd ? 'MISSED CUT' : g.status}</span></div>
+          <div class="golfer-detail-row"><span>Status</span><span class="golfer-detail-val" style="${isCutOrWd ? 'color:var(--red);font-weight:600;' : 'color:var(--green)'}">${isCutOrWd ? 'MISSED CUT' : (g.thru === 'F' || g.thru === 18 || g.thru === '18' ? 'F — Finished' : g.status)}</span></div>
           <div class="golfer-earnings">${earningsHtml}</div>
         </div>
       `;
@@ -2280,6 +2290,8 @@ function saveAdminTagline() {
   // Update the header tagline text
   const el = document.getElementById('tagline-text');
   if (el) el.textContent = val;
+  const hero = document.getElementById('tagline-hero');
+  if (hero) hero.textContent = val;
   localStorage.setItem('pool_tagline', val);
   document.getElementById('admin-tagline-status').textContent = '✓ Tagline updated!';
   setTimeout(() => {
@@ -2295,6 +2307,8 @@ function initTagline() {
   if (saved && !saved.includes('<') && saved.length < 300) {
     const el = document.getElementById('tagline-text');
     if (el) el.textContent = saved;
+    const hero = document.getElementById('tagline-hero');
+    if (hero) hero.textContent = saved;
   } else if (saved && saved.includes('<')) {
     // Wipe corrupted HTML tagline from old version
     localStorage.removeItem(TAGLINE_KEY);
@@ -2314,6 +2328,8 @@ function saveTagline() {
   const val = document.getElementById('tagline-input').value.trim();
   if (!val) return;
   document.getElementById('tagline-text').textContent = val;
+  const heroEl = document.getElementById('tagline-hero');
+  if (heroEl) heroEl.textContent = val;
   localStorage.setItem(TAGLINE_KEY, val);
   closeTaglineEditor();
 }
