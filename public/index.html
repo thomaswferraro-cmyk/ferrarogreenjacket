@@ -1360,17 +1360,8 @@ async function loadMastersData() {
 
   console.log('[Pool] Top 5:', mastersData.slice(0,5).map(p => p.name + ' ' + p.position + ' ' + p.score));
 
-  // Date-based round detection — more reliable than ESPN's status.period
-  const _today = new Date();
-  const _month = _today.getMonth() + 1; // 1-based
-  const _day   = _today.getDate();
-  const _dateRound = (_month === 4 && _day === 10) ? 1
-                   : (_month === 4 && _day === 11) ? 2
-                   : (_month === 4 && _day === 12) ? 3
-                   : (_month === 4 && _day === 13) ? 4
-                   : (status?.period || 1);
-  const round      = _dateRound;
-  const inProgress = status?.type?.state === 'in' || status?.type?.state === 'post' || mastersData.length > 0;
+  const round      = 2; // ← UPDATE EACH DAY: 1=Thu 2=Fri 3=Sat 4=Sun
+  const inProgress = mastersData.length > 0;
   updateLiveStatus(inProgress ? `Round ${round > 0 ? round : 1} · Live` : (round > 0 ? `R${round} Complete` : 'Round 1'));
   document.getElementById('last-updated-el').textContent = 'Updated: ' + new Date().toLocaleTimeString();
   // Flash the live dot green briefly to confirm data refreshed
@@ -1440,16 +1431,7 @@ function updateLiveStatus(text) {
     4: { label: 'R4',   sub: 'Sunday · Apr 13',     badge: 'Round 4 Live',          badgeSub: 'Sunday · Apr 13, 2026' },
   };
 
-  // Use date-based round number — same logic as loadMastersData
-  const _uToday = new Date();
-  const _uDay   = _uToday.getDate();
-  const _uMonth = _uToday.getMonth() + 1;
-  let roundNum = (_uMonth === 4 && _uDay === 10) ? 1
-               : (_uMonth === 4 && _uDay === 11) ? 2
-               : (_uMonth === 4 && _uDay === 12) ? 3
-               : (_uMonth === 4 && _uDay === 13) ? 4
-               : 2; // default to R2 during tournament week
-  // Override with text if explicitly stated (e.g. manual override)
+  let roundNum = 2; // ← UPDATE EACH DAY: 1=Thu 2=Fri 3=Sat 4=Sun
   const roundMatch = text.match(/Round (\d)/);
   if (roundMatch) roundNum = parseInt(roundMatch[1]);
   const isLive = text.includes('Live');
