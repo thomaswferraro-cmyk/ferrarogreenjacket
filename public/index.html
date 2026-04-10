@@ -725,9 +725,9 @@
     <!-- Right: Round badge + date -->
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
       <div style="background:rgba(255,209,0,0.18);border:1.5px solid var(--gold);border-radius:8px;padding:6px 16px;text-align:center;">
-        <div id="header-round-badge" style="font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:#FFD100;letter-spacing:0.04em;">Round 2 · Live</div>
+        
       </div>
-      <div id="header-round-sub" style="font-size:12px;color:rgba(255,255,255,0.55);letter-spacing:0.05em;font-family:'DM Mono',monospace;">Apr 10–13, 2026</div>
+      
     </div>
   </div>
 </div>
@@ -804,11 +804,7 @@
           1st $18,750 · 2nd $9,375 · 3rd $5,625<br>4th $2,625 · 5th $1,125
         </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Tournament</div>
-        <div class="stat-value" id="stat-round">R2</div>
-        <div class="stat-sub" id="stat-round-sub">Apr 10–13, 2026</div>
-      </div>
+      
 
       <div class="stat-card">
         <div class="stat-label">Data source</div>
@@ -875,7 +871,7 @@
     <div id="masters-empty" style="display:none;" class="empty-state">
       <div class="empty-icon">🏌️</div>
       <div class="empty-title">No live data available</div>
-      <div class="empty-text">Round 1 is underway at TPC San Antonio. Scores update every 5 minutes!</div>
+      <div class="empty-text">Masters Tournament is underway. Scores update every 2 minutes!</div>
     </div>
   </div>
 
@@ -1362,7 +1358,7 @@ async function loadMastersData() {
 
   const round      = 2; // ← UPDATE EACH DAY: 1=Thu 2=Fri 3=Sat 4=Sun
   const inProgress = mastersData.length > 0;
-  updateLiveStatus(inProgress ? `Round ${round > 0 ? round : 1} · Live` : (round > 0 ? `R${round} Complete` : 'Round 1'));
+  updateLiveStatus(inProgress ? `Round ${round > 0 ? round : 1} · Live` : 'In Progress');
   document.getElementById('last-updated-el').textContent = 'Updated: ' + new Date().toLocaleTimeString();
   // Flash the live dot green briefly to confirm data refreshed
   const liveDot = document.getElementById('live-dot');
@@ -1476,7 +1472,7 @@ function updateLiveStatus(text) {
     if (isManual) {
       headerBadgeSub.textContent = 'Admin override active';
     } else if (text.includes('Pre')) {
-      headerBadgeSub.textContent = 'Round 1 · Apr 10, 2026';
+      if (headerBadgeSub) headerBadgeSub.textContent = '';
     } else {
       headerBadgeSub.textContent = meta.badgeSub;
     }
