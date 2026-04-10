@@ -1360,8 +1360,17 @@ async function loadMastersData() {
 
   console.log('[Pool] Top 5:', mastersData.slice(0,5).map(p => p.name + ' ' + p.position + ' ' + p.score));
 
-  const round      = status?.period || 0;
-  const inProgress = status?.type?.state === 'in';
+  // Date-based round detection — more reliable than ESPN's status.period
+  const _today = new Date();
+  const _month = _today.getMonth() + 1; // 1-based
+  const _day   = _today.getDate();
+  const _dateRound = (_month === 4 && _day === 10) ? 1
+                   : (_month === 4 && _day === 11) ? 2
+                   : (_month === 4 && _day === 12) ? 3
+                   : (_month === 4 && _day === 13) ? 4
+                   : (status?.period || 1);
+  const round      = _dateRound;
+  const inProgress = status?.type?.state === 'in' || status?.type?.state === 'post' || mastersData.length > 0;
   updateLiveStatus(inProgress ? `Round ${round > 0 ? round : 1} · Live` : (round > 0 ? `R${round} Complete` : 'Round 1'));
   document.getElementById('last-updated-el').textContent = 'Updated: ' + new Date().toLocaleTimeString();
   // Flash the live dot green briefly to confirm data refreshed
