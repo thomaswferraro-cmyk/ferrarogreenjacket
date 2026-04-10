@@ -1500,7 +1500,7 @@ function renderMastersBoard(players) {
       <div class="masters-player-row ${p.cut ? 'cut-player' : ''}">
         <div class="masters-pos">${p.position}</div>
         <div class="masters-name" style="${p.cut ? 'color:var(--text-muted);text-decoration:line-through;' : ''}">${p.name}${tieLabel}</div>
-        <div class="masters-round">${p.thru !== '—' ? 'Thru '+p.thru : 'R'+p.round}</div>
+        <div class="masters-round">${p.thru === 'F' ? 'F' : (p.thru && p.thru !== '—' ? 'Thru '+p.thru : '')}</div>
         <div class="masters-score ${scoreClass}">${scoreDisplay}</div>
         ${payout > 0 ? `<div class="masters-earnings-badge">$${(payout/1000).toFixed(1)}K</div>` : (p.cut ? '<div style="font-size:11px;color:var(--text-muted);">CUT</div>' : '')}
       </div>
