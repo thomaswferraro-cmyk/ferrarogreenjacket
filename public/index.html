@@ -1190,7 +1190,7 @@ function getPayoutForPosition(posNum, tiedCount) {
 // Used mid-round to show estimated earnings before positions are finalised
 function buildProjectedPosMap(players) {
   // Only include players who have started (have a real score)
-  const active = players.filter(p => !p.cut && !p.wd && p.score !== '—' && p.score !== undefined);
+  const active = players.filter(p => !p.cut && !p.wd && !isCutPlayer(p.name) && p.score !== '—' && p.score !== undefined);
   
   // Sort by scoreVal ascending (lower = better)
   const sorted = [...active].sort((a, b) => a.scoreVal - b.scoreVal);
@@ -1386,6 +1386,25 @@ function parseScore(s) {
   if (!s || s === 'E') return 0;
   const n = parseInt(s);
   return isNaN(n) ? 0 : n;
+}
+
+// ── Hardcoded cut list (updated after R2) ──────────────────────
+const CUT_PLAYERS = ["Harry Hall","Ryan Fox","Danny Willett","Bubba Watson","J.J. Spaun","Nicolai Højgaard","Bryson DeChambeau","Zach Johnson","Akshay Bhatia","Robert MacIntyre","Rasmus Neergaard-Petersen","Andrew Novak","Tom McKibbin","Cameron Smith","Casey Jarvis","Daniel Berger","Jackson Herrington","Michael Kim","Ethan Fang","Fred Couples","Mason Howell","José María Olazábal","Mike Weir","Vijay Singh","Fifa Laopakdee","Carlos Ortiz","Sami Välimäki","Min Woo Lee","Johnny Keefer","Max Greyserman","Nico Echavarria","Naoyuki Kataoka","Aldrich Potgieter","Mateo Pulcini","Brandon Holtz","Ángel Cabrera","Davis Riley"];
+
+function normForCut(s) {
+  if (!s) return '';
+  return s.replace(/[øØ]/g,'o').replace(/[æÆ]/g,'ae').replace(/[åÅ]/g,'a')
+          .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i')
+          .replace(/[óòö]/g,'o').replace(/[úùü]/g,'u').replace(/[ñ]/g,'n')
+          .replace(/[ç]/g,'c').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+          .toLowerCase().replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();
+}
+
+function isCutPlayer(name) {
+  const n = normForCut(name);
+  return CUT_PLAYERS.some(c => normForCut(c) === n ||
+    normForCut(c).split(' ').slice(-1)[0] === n.split(' ').slice(-1)[0] && normForCut(c).split(' ')[0][0] === n.split(' ')[0][0]
+  );
 }
 
 function usePendingState() {
@@ -1707,9 +1726,9 @@ function calcTeamEarnings(entry) {
       return { name: g, earnings: 0, status: 'pending', pos: '—', score: '—', posNum: 999, tiedCount: 1, projected: false };
     }
 
-    const isCut = data.cut || data.wd;
+    const isCut = data.cut || data.wd || isCutPlayer(data.name);
     if (isCut) {
-      return { name: g, earnings: 0, status: data.cut ? 'cut' : 'wd', pos: data.position || '—', score: data.score || '—', posNum: 999, tiedCount: 1, projected: false };
+      return { name: g, earnings: 0, status: 'cut', pos: 'CUT', score: data.score || '—', posNum: 999, tiedCount: 1, projected: false };
     }
 
     // Use official position if available (posNum < 999)
