@@ -806,7 +806,7 @@
       </div>
       <div class="stat-card">
         <div class="stat-label">Tournament</div>
-        <div class="stat-value" id="stat-round">Pre</div>
+        <div class="stat-value" id="stat-round">R2</div>
         <div class="stat-sub" id="stat-round-sub">Apr 10–13, 2026</div>
       </div>
 
@@ -1297,12 +1297,12 @@ async function loadMastersData() {
       lastErr = `${attempt.url.substring(0,40)} → no events in response`;
     } catch (e) {
       lastErr = `${attempt.url.substring(0,40)} → ${e.message}`;
-      console.warn('[Pool] Fetch failed:', attempt.url.substring(0,50), e.message);
+      // Suppressed: ESPN direct fetch blocked by CORS (Netlify function handles this)
     }
   }
 
   if (!data) {
-    console.warn('All score sources failed. Last error:', lastErr);
+    console.log('[Pool] All fetch attempts failed:', lastErr);
     updateLiveStatus('⚠ Scores unavailable — use Manual Override in Admin tab');
     usePendingState();
     scheduleRefresh();
@@ -1440,9 +1440,17 @@ function updateLiveStatus(text) {
     4: { label: 'R4',   sub: 'Sunday · Apr 13',     badge: 'Round 4 Live',          badgeSub: 'Sunday · Apr 13, 2026' },
   };
 
-  // Detect round number from text
-  let roundNum = 0;
-  const roundMatch = text.match(/(\d)/);
+  // Use date-based round number — same logic as loadMastersData
+  const _uToday = new Date();
+  const _uDay   = _uToday.getDate();
+  const _uMonth = _uToday.getMonth() + 1;
+  let roundNum = (_uMonth === 4 && _uDay === 10) ? 1
+               : (_uMonth === 4 && _uDay === 11) ? 2
+               : (_uMonth === 4 && _uDay === 12) ? 3
+               : (_uMonth === 4 && _uDay === 13) ? 4
+               : 2; // default to R2 during tournament week
+  // Override with text if explicitly stated (e.g. manual override)
+  const roundMatch = text.match(/Round (\d)/);
   if (roundMatch) roundNum = parseInt(roundMatch[1]);
   const isLive = text.includes('Live');
   const isComplete = text.includes('Complete') || text.includes('Final');
@@ -1458,8 +1466,8 @@ function updateLiveStatus(text) {
       roundEl.textContent = 'Manual';
       if (roundSub) roundSub.textContent = 'Override active';
     } else if (text.includes('Pre')) {
-      roundEl.textContent = 'R1';
-      if (roundSub) roundSub.textContent = 'Apr 10–13, 2026';
+      roundEl.textContent = 'R' + roundNum;
+      if (roundSub) roundSub.textContent = roundMeta[roundNum]?.sub || 'Apr 10–13, 2026';
     } else {
       roundEl.textContent = isComplete ? meta.label + ' ✓' : meta.label;
       if (roundSub) roundSub.textContent = meta.sub;
