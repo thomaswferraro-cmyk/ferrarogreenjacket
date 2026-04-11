@@ -826,7 +826,7 @@
       <div style="background:#faf7f0;border:1px solid #e0d8c0;border-left:4px solid #FFD100;border-radius:8px;padding:14px 18px;margin-bottom:18px;display:flex;gap:12px;align-items:flex-start;">
         <span style="font-size:20px;flex-shrink:0;margin-top:1px;">⛳</span>
         <p style="font-size:15px;color:#4a4a4a;line-height:1.7;margin:0;">
-          <strong style="color:#00573F;">FORE!</strong> This leaderboard is <strong style="color:#00573F;text-decoration:underline;">unofficial</strong> — for fun only. Projected earnings use current positions and the official Masters Tournament payout table ($20M purse). <strong>Ties are split correctly</strong>: when multiple golfers share a position, the prize money for all tied spots is averaged and divided equally — nobody gets credited more than they'd actually earn. <strong>Golfers who miss the cut earn $0</strong> for the pool and are shown struck through in red. Standings update every 30 seconds via ESPN. <strong style="color:#00573F;">If you're in the hunt come Sunday, you'll get an official call from the Ferraros.</strong> Good luck out there.
+          <strong style="color:#00573F;">FORE!</strong> This leaderboard is <strong style="color:#00573F;text-decoration:underline;">unofficial</strong> — for fun only. Projected earnings use current positions and the official Masters Tournament payout table ($22.5M purse). <strong>Ties are split correctly</strong>: when multiple golfers share a position, the prize money for all tied spots is averaged and divided equally — nobody gets credited more than they'd actually earn. <strong>Golfers who miss the cut earn $0</strong> for the pool and are shown struck through in red. Standings update every 2 minutes via ESPN. <strong style="color:#00573F;">If you're in the hunt come Sunday, you'll get an official call from the Ferraros.</strong> Good luck out there.
         </p>
       </div>
 
@@ -2153,7 +2153,7 @@ setInterval(() => {
       document.getElementById('view-leaderboard').classList.contains('active')) {
     loadMastersData();
   }
-}, 30 * 1000); // every 30 seconds
+}, 30 * 1000); // every 2 minutes
 
 // ── Name Validator ─────────────────────────────────────────────
 function runNameValidator() {
